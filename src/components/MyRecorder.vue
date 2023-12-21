@@ -1,3 +1,4 @@
+@ -0,0 +1,179 @@
 <template>
   <div style="padding: 20px;">
     <h1>{{ msg }}</h1>
@@ -14,11 +15,14 @@
         播放时长：{{ recorder && (playTime > recorder.duration ? recorder.duration.toFixed(4) : playTime.toFixed(4)) }}
       </h3>
       <br />
+      <br />
       <el-button type="primary" @click="handlePlay">播放录音</el-button>
       <el-button type="info" @click="handlePausePlay">暂停播放</el-button>
       <el-button type="success" @click="handleResumePlay">继续播放</el-button>
       <el-button type="warning" @click="handleStopPlay">停止播放</el-button>
       <el-button type="error" @click="handleDestroy">销毁录音</el-button>
+      <br />
+      <br />
       <el-button type="primary" @click="downloadPCM">下载PCM数据</el-button>
       <el-button type="primary" @click="downloadWAV">下载WAV数据</el-button>
       <el-button type="primary" @click="uploadRecord">上传</el-button>
@@ -55,19 +59,19 @@ export default {
     handleStart() {
       this.recorder = new Recorder({
         sampleBits: 16, // 采样位数，支持 8 或 16，默认是 16
-      sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，Chrome 是 48000
-      numChannels: 1, // 声道数，支持 1 或 2， 默认是 1
+        sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，Chrome 是 48000
+        numChannels: 1, // 声道数，支持 1 或 2， 默认是 1
       }),
-      Recorder.getPermission().then(() => {
-        console.log('开始录音')
-        this.recorder.start() // 开始录音
-      }, (error) => {
-        this.$message({
-          message: '请先允许该网页使用麦克风',
-          type: 'info'
+        Recorder.getPermission().then(() => {
+          console.log('开始录音')
+          this.recorder.start() // 开始录音
+        }, (error) => {
+          this.$message({
+            message: '请先允许该网页使用麦克风',
+            type: 'info'
+          })
+          console.log(`${error.name} : ${error.message}`)
         })
-        console.log(`${error.name} : ${error.message}`)
-      })
     },
     handlePause() {
       console.log('暂停录音')
@@ -176,4 +180,3 @@ export default {
   }
 }
 </script>
-  

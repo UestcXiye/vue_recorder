@@ -1,9 +1,6 @@
 <template>
     <div class="home">
-        <!-- <img
-      alt="Vue logo"
-      src="../assets/logo.png"
-    > -->
+        <!-- <img alt="Vue logo" src="../assets/logo.png"> -->
         <MyRecorder msg="Welcome to Vue Recorder" />
     </div>
 </template>
