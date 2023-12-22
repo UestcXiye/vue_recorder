@@ -73,76 +73,98 @@ export default {
           console.log(`${error.name} : ${error.message}`)
         })
     },
+
+    // 暂停录音
     handlePause() {
       console.log('暂停录音')
       this.recorder.pause() // 暂停录音
     },
+
+    // 恢复录音
     handleResume() {
       console.log('恢复录音')
       this.recorder.resume() // 恢复录音
     },
+
+    // 停止录音
     handleStop() {
       console.log('停止录音')
       this.recorder.stop() // 停止录音
     },
+
+    // 播放录音
     handlePlay() {
       console.log('播放录音')
       console.log(this.recorder)
       this.recorder.play() // 播放录音
 
-      // 播放时长
+      // 设置 playTime 为录音播放时长
       this.timer = setInterval(() => {
         try {
-          this.playTime = this.recorder.getPlayTime()
+          this.playTime = this.recorder.getPlayTime() // 获取音频已经播的时长，返回 number
         } catch (error) {
           this.timer = null
         }
       }, 100)
     },
+
+    // 暂停播放
     handlePausePlay() {
       console.log('暂停播放')
-      this.recorder.pausePlay() // 暂停播放
+      this.recorder.pausePlay() // 暂停录音播放
 
       // 播放时长
-      this.playTime = this.recorder.getPlayTime()
+      this.playTime = this.recorder.getPlayTime() // 获取音频已经播的时长，返回 number
       this.time = null
     },
+
+    // 恢复播放
     handleResumePlay() {
       console.log('恢复播放')
-      this.recorder.resumePlay() // 恢复播放
+      this.recorder.resumePlay() // 恢复录音播发
 
-      // 播放时长
+      // 设置 playTime 为录音播放时长
       this.timer = setInterval(() => {
         try {
-          this.playTime = this.recorder.getPlayTime()
+          this.playTime = this.recorder.getPlayTime() // 获取音频已经播的时长，返回 number
         } catch (error) {
           this.timer = null
         }
       }, 100)
     },
+
+    // 停止播放
     handleStopPlay() {
       console.log('停止播放')
       this.recorder.stopPlay() // 停止播放
 
       // 播放时长
-      this.playTime = this.recorder.getPlayTime()
+      this.playTime = this.recorder.getPlayTime() // 获取音频已经播的时长，返回 number
       this.timer = null
     },
+
+    // 销毁实例
     handleDestroy() {
       console.log('销毁实例')
       this.recorder.destroy() // 销毁实例
       this.timer = null
     },
+
+    // 下载 PCM 格式文件
     downloadPCM() {
       console.log('下载PCM格式数据')
       // 注：使用该方法会默认调用 stop() 方法
-      this.recorder.downloadPCM("record" + new Date().getTime())
+      this.recorder.downloadPCM("record_pcm" + new Date().getTime())
     },
+
+    // 下载 WAV 格式文件
     downloadWAV() {
       console.log('下载WAV格式数据')
       // 注：使用该方法会默认调用 stop() 方法
-      this.recorder.downloadWAV("record" + new Date().getTime())
+      this.recorder.downloadWAV("record_wav" + new Date().getTime())
     },
+
+    // 上传 PCM 格式文件给后端 upload 端口
     uploadRecord() {
       if (this.recorder == null || this.recorder.duration === 0) {
         this.$message({
@@ -164,6 +186,7 @@ export default {
       formData.append('file', fileOfBlob)
       const url = window.URL.createObjectURL(fileOfBlob)
       this.src = url
+      
       axios.post('http://localhost:8087/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -172,10 +195,9 @@ export default {
         console.log('上传成功', response.data);
       }).then(res => {
         console.log(res.data.data[0].url)
+      }).catch(error => {
+        console.error('上传失败', error);
       })
-        .catch(error => {
-          console.error('上传失败', error);
-        })
     },
   }
 }
