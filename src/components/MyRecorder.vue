@@ -1,4 +1,3 @@
-@ -0,0 +1,179 @@
 <template>
   <div style="padding: 20px;">
     <h1>{{ msg }}</h1>
@@ -26,9 +25,16 @@
       <el-button type="primary" @click="downloadPCM">下载PCM数据</el-button>
       <el-button type="primary" @click="downloadWAV">下载WAV数据</el-button>
       <el-button type="primary" @click="uploadRecord">上传</el-button>
+      <br />
+      <br />
+      <textarea class="asrText" rows="10" cols="50" placeholder="语音识别结果" v-bind="asrText"></textarea>
     </div>
   </div>
 </template>
+
+<style scoped>
+.asrText {}
+</style>
 
 <script>
 import Recorder from 'js-audio-recorder'
@@ -39,24 +45,89 @@ export default {
   props: {
     msg: String
   },
+
   data() {
     return {
-      recorder: null,
-      playTime: 0,
+      recorder: null, // recorder 实例
+      playTime: 0, // 录音播放时间
       timer: null,
-      src: null
+      src: null, // 录音 url
+      asrText: null, // 语音识别文本
+
+      webSocket: null, // WebSocket 实例
+      id: 'test', // 事先需要向服务端请求一个 id，来唯一标识客户端
+      wsUrl: 'ws://localhost:8087/websocket/', // 服务端地址
+      arrayBuffer: []
     }
   },
+
   created() {
+    // 初始化 recorder 实例
     this.recorder = new Recorder({
       sampleBits: 16, // 采样位数，支持 8 或 16，默认是 16
       sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，Chrome 是 48000
       numChannels: 1, // 声道数，支持 1 或 2， 默认是 1
     })
+    // 创建 WebSocket 连接
+    this.initWebSocket()
   },
+
+  // updated() {
+  //   this.getAsrRealTimeResult()
+  // },
+
+  destroyed() {
+    // 在 Vue 销毁前断开 WebSocket 连接
+    this.webSocket.onclose()
+  },
+
   methods: {
+    // 初始化 WebSocket
+    initWebSocket() {
+      if (typeof WebSocket === 'undefined') {
+        this.$message.error('Error：浏览器不支持 WebSocket！')
+        return;
+      }
+      // 创建 WebSocket 实例，创建以前先检查一下 id 是否获取到
+      this.webSocket = new WebSocket(this.wsUrl + this.id)
+      // 给 WebSocket 实例提供实现方法
+      this.webSocket.onopen = this.webSocketOnOpen
+      this.webSocket.onerror = this.webSocketOnError
+      this.webSocket.onclose = this.webSocketClose
+      this.webSocket.onmessage = this.webSocketOnMessage
+    },
+
+    // 打开事件
+    webSocketOnOpen() {
+      this.webSocket.binaryType = 'arraybuffer'
+      console.log("WebSocket 连接成功")
+    },
+
+    // 错误事件
+    webSocketOnError() {
+      console.log("WebSocket 发生了错误")
+    },
+
+    // 关闭事件
+    webSocketClose() {
+      console.log("WebSocket 已关闭")
+    },
+
+    // 获得消息事件
+    webSocketOnMessage(message) {
+      console.log("WebSocket 接收到数据：" + message)
+      // 前端处理数据
+      this.setAsrRealTimeText(message.data)
+    },
+
+    // 向 WebSocket 服务器发送信息
+    webSocketSendMessage(data) {
+      this.webSocket.send(data)
+    },
+
     // 开始录音
     handleStart() {
+      // 初始化 recorder 实例
       this.recorder = new Recorder({
         sampleBits: 16, // 采样位数，支持 8 或 16，默认是 16
         sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，Chrome 是 48000
@@ -164,6 +235,19 @@ export default {
       this.recorder.downloadWAV("record_wav" + new Date().getTime())
     },
 
+    // 将 Blob 转换成 ArrayBuffer
+    blobToArrayBuffer(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+          resolve(reader.result);
+        };
+        reader.readAsArrayBuffer(blob);
+      });
+    },
+
+
     // 上传 PCM 格式文件给后端 upload 端口
     uploadRecord() {
       if (this.recorder == null || this.recorder.duration === 0) {
@@ -177,27 +261,56 @@ export default {
       this.timer = null
       console.log('上传录音') // 上传录音
 
-      const blob = this.recorder.getPCMBlob() // 获取 pcm 格式音频数据
-      const newBlob = new Blob([blob])
-      // 此处获取到 blob 对象后需要设置 fileName 满足项目上传需求，这里选择把 blob 包装成 file 塞入 formData
-      const fileOfBlob = new File([newBlob], new Date().getTime() + '.pcm')
+      let blob = this.recorder.getPCMBlob() // 获取 pcm 格式音频数据
+      //let newBlob = new Blob([blob])
+      // // 此处获取到 blob 对象后需要设置 fileName 满足项目上传需求，这里选择把 blob 包装成 file 塞入 formData
+      //let fileOfBlob = new File([newBlob], new Date().getTime() + '.pcm')
+      // const formData = new FormData()
+      // formData.append('file', fileOfBlob)
+      // const url = window.URL.createObjectURL(fileOfBlob)
+      // this.src = url
 
-      const formData = new FormData()
-      formData.append('file', fileOfBlob)
-      const url = window.URL.createObjectURL(fileOfBlob)
-      this.src = url
-      
-      axios.post('http://localhost:8087/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }).then(response => {
-        console.log('上传成功', response.data);
-      }).then(res => {
-        console.log(res.data.data[0].url)
-      }).catch(error => {
-        console.error('上传失败', error);
-      })
+      // axios.post('http://localhost:8087/uploadPCMRecord', formData, {
+      //   headers: {
+      //     'Content-Type': 'multipart/form-data'
+      //   }
+      // }).then(response => {
+      //   console.log('上传成功', response.data);
+      // }).then(res => {
+      //   console.log(res.data.data[0].url)
+      // }).catch(error => {
+      //   console.error('上传失败', error);
+      // })
+
+      this.blobToArrayBuffer(blob).then(arrayBuffer => {
+        console.log(arrayBuffer)
+        this.webSocketSendMessage(arrayBuffer)
+      });
+    },
+
+    // 将实时语音识别文本同步到 textarea 中
+    setAsrRealTimeText(data) {
+      // 实时语音识别文本在 data.data 中
+      this.asrText = data.data
+    },
+
+    // 接收后端传回的 action 类型为 realtime_result 的语音识别数据
+    getAsrRealTimeResult() {
+      axios.get('http://localhost:8087/getAsrRealTimeResult')
+        .then(response => {
+          // 处理成功情况
+          console.log(response)
+          this.setAsrRealTimeText(response.data)
+        }).catch(error => {
+          // 处理错误情况
+          this.$message({
+            message: '获取实时语音识别数据失败！',
+            type: 'error',
+            duration: 2000
+          })
+          console.log("获取实时语音识别数据出错！")
+          console.error(error)
+        })
     },
   }
 }
