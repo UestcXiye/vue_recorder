@@ -65,7 +65,6 @@ export default {
       sampleBits: 16, // 采样位数，支持 8 或 16，默认是 16
       sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，Chrome 是 48000
       numChannels: 1, // 声道数，支持 1 或 2， 默认是 1
-      compiling: true, // 是否边录边转换，默认是 false
     })
     // 创建 WebSocket 连接
     this.initWebSocket()
@@ -128,7 +127,6 @@ export default {
         sampleBits: 16, // 采样位数，支持 8 或 16，默认是 16
         sampleRate: 16000, // 采样率，支持 11025、16000、22050、24000、44100、48000，根据浏览器默认值，Chrome 是 48000
         numChannels: 1, // 声道数，支持 1 或 2， 默认是 1
-        compiling: true, // 是否边录边转换，默认是 false
       })
 
       Recorder.getPermission().then(() => {
